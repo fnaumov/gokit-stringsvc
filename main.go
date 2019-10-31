@@ -6,6 +6,7 @@ import (
 	httptransport "github.com/go-kit/kit/transport/http"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/fnaumov/stringsvc"
 	"net/http"
 	"os"
 )
