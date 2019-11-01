@@ -38,3 +38,16 @@ func (mw loggingMiddleware) Count(s string) (n int) {
 	n = mw.next.Count(s)
 	return
 }
+
+func (mw loggingMiddleware) HealthCheck() (n bool) {
+	defer func (begin time.Time) {
+		mw.logger.Log(
+			"method", "health",
+			"n", n,
+			"took", time.Since(begin),
+		)
+	}(time.Now())
+
+	n = mw.next.HealthCheck()
+	return
+}

@@ -23,3 +23,9 @@ message CountRequest {
 message CountReply {
 	int64 v = 1;
 }
+
+message HealthRequest {}
+
+message HealthReply {
+	bool s = 1;
+}

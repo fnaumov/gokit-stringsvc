@@ -27,6 +27,12 @@ type countResponse struct {
 	V int `json:"v"`
 }
 
+type HealthRequest struct {}
+
+type HealthResponse struct {
+	S bool `json:"status"`
+}
+
 // Decoders and Encoders
 
 func decodeUppercaseRequest(_ context.Context, r *http.Request) (interface{}, error) {
@@ -49,6 +55,10 @@ func decodeCountRequest(_ context.Context, r *http.Request) (interface{}, error)
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	return json.NewEncoder(w).Encode(response)
+}
+
+func decodeHealthRequest(_ context.Context, _ *http.Request) (interface{}, error) {
+	return HealthRequest{}, nil
 }
 
 // Endpoints
@@ -74,6 +84,13 @@ func makeCountEndpoint(svc StringService) endpoint.Endpoint {
 	}
 }
 
+func makeHealthEndpoint(svc StringService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		status := svc.HealthCheck()
+		return HealthResponse{S: status}, nil
+	}
+}
+
 // GRPC Binding
 
 type grpcBinding struct {
@@ -89,3 +106,8 @@ func (g grpcBinding) Count(ctx context.Context, req *pb.CountRequest) (*pb.Count
 	v := g.svc.Count(req.S)
 	return &pb.CountReply{V: int64(v)}, nil
 }
+
+// func (g grpcBinding) HealthCheck(ctx context.Context, req *pb.CountRequest) (*pb.UppercaseRequest, error) {
+// 	v := g.svc.Count(req.S)
+// 	return &pb.CountReply{V: int64(v)}, nil
+// }

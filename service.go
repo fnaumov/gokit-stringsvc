@@ -8,6 +8,7 @@ import (
 type StringService interface {
 	Uppercase(string) (string, error)
 	Count(string) int
+	HealthCheck() bool
 }
 
 type stringService struct {}
@@ -24,4 +25,8 @@ func (stringService) Uppercase(s string) (string, error) {
 
 func (stringService) Count(s string) int {
 	return len(s)
+}
+
+func (stringService) HealthCheck() bool {
+	return true
 }

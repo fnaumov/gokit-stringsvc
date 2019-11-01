@@ -1,0 +1,8 @@
+version: '3.7'
+
+services:
+  consul:
+    container_name: stringsvc-consul
+    image: consul:1.6.1
+    ports:
+      - 8500:8500

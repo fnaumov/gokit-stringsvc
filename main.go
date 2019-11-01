@@ -7,60 +7,46 @@ import (
 	"fmt"
 	"github.com/fnaumov/stringsvc/pb"
 	"github.com/go-kit/kit/log"
-	kitprometheus "github.com/go-kit/kit/metrics/prometheus"
 	httptransport "github.com/go-kit/kit/transport/http"
-	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
 	var (
-		httpAddr = ":8080"
-		grpcAddr = ":8081"
+		logger = log.NewLogfmtLogger(os.Stderr)
+		httpAddr = "localhost:8080"
+		grpcAddr = "localhost:8081"
+		consulAddr = "localhost:8500"
 	)
 
-	logger := log.NewLogfmtLogger(os.Stderr)
-
-	fieldKeys := []string{"method", "error"}
-	requestCount := kitprometheus.NewCounterFrom(stdprometheus.CounterOpts{
-		Namespace: "my_group",
-		Subsystem: "string_service",
-		Name:      "request_count",
-		Help:      "Number of requests received.",
-	}, fieldKeys)
-	requestLatency := kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
-		Namespace: "my_group",
-		Subsystem: "string_service",
-		Name:      "request_latency_microseconds",
-		Help:      "Total duration of requests in microseconds.",
-	}, fieldKeys)
-	countResult := kitprometheus.NewSummaryFrom(stdprometheus.SummaryOpts{
-		Namespace: "my_group",
-		Subsystem: "string_service",
-		Name:      "count_result",
-		Help:      "The result of each count method.",
-	}, []string{}) // no fields here
+	rand.Seed(time.Now().UnixNano())
 
 	var svc StringService
 	svc = stringService{}
 	svc = loggingMiddleware{logger, svc}
-	svc = instrumentingMiddleware{requestCount, requestLatency, countResult, svc}
 
 	errc := make(chan error)
 
+	// Listen signals
 	go func() {
 		errc <- interrupt()
 	}()
 
+	// HTTP Server
+	registrarHTTP := ConsulRegister(consulAddr, httpAddr)
 	go func() {
+		registrarHTTP.Register()
+		defer registrarHTTP.Deregister()
+
 		mux := http.NewServeMux()
 
 		uppercaseHandler := httptransport.NewServer(
@@ -75,15 +61,26 @@ func main() {
 			encodeResponse,
 		)
 
+		healthHandler := httptransport.NewServer(
+			makeHealthEndpoint(svc),
+			decodeHealthRequest,
+			encodeResponse,
+		)
+
 		mux.Handle("/uppercase", uppercaseHandler)
 		mux.Handle("/count", countHandler)
-		mux.Handle("/metrics", promhttp.Handler())
+		mux.Handle("/health", healthHandler)
 
 		_ = logger.Log("protocol", "HTTP", "addr", httpAddr)
 		errc <- http.ListenAndServe(httpAddr, mux)
 	}()
 
+	// GRPC Server
+	registrarGRPC := ConsulRegister(consulAddr, grpcAddr)
 	go func() {
+		registrarGRPC.Register()
+		defer registrarGRPC.Deregister()
+
 		_ = logger.Log("protocol", "GRPC", "addr", grpcAddr)
 		ln, err := net.Listen("tcp", grpcAddr)
 		if err != nil {
@@ -96,6 +93,7 @@ func main() {
 		errc <- s.Serve(ln)
 	}()
 
+	time.Sleep(1 * time.Second)
 	testHTTPRequest()
 	testGRPCRequest()
 
@@ -140,7 +138,7 @@ func testHTTPRequest() {
 
 func testGRPCRequest() {
 	logger := log.NewLogfmtLogger(os.Stderr)
-	conn, err := grpc.Dial("127.0.0.1:8081", grpc.WithInsecure())
+	conn, err := grpc.Dial("localhost:8081", grpc.WithInsecure())
 
 	if err != nil {
 		grpclog.Fatalf("Fail to dial: %v", err)
