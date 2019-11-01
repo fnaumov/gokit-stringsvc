@@ -42,7 +42,7 @@ func main() {
 	}()
 
 	// HTTP Server
-	registrarHTTP := ConsulRegister(consulAddr, httpAddr)
+	registrarHTTP := ConsulRegister(consulAddr, httpAddr, "HTTP")
 	go func() {
 		registrarHTTP.Register()
 		defer registrarHTTP.Deregister()
@@ -76,7 +76,7 @@ func main() {
 	}()
 
 	// GRPC Server
-	registrarGRPC := ConsulRegister(consulAddr, grpcAddr)
+	registrarGRPC := ConsulRegister(consulAddr, grpcAddr, "GRPS")
 	go func() {
 		registrarGRPC.Register()
 		defer registrarGRPC.Deregister()

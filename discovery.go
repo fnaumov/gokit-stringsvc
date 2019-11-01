@@ -5,13 +5,13 @@ import (
 	"github.com/go-kit/kit/sd"
 	consulsd "github.com/go-kit/kit/sd/consul"
 	"github.com/hashicorp/consul/api"
-	"math/rand"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
-func ConsulRegister(consulAddr string, checkAddr string) sd.Registrar {
+func ConsulRegister(consulAddr string, checkAddr string, protocol string) sd.Registrar {
 	logger := log.NewLogfmtLogger(os.Stderr)
 
 	// Service discovery domain.
@@ -28,17 +28,25 @@ func ConsulRegister(consulAddr string, checkAddr string) sd.Registrar {
 	}
 
 	check := api.AgentServiceCheck{
-		HTTP:     "http://" + checkAddr + "/health",
 		Interval: "10s",
-		Timeout:  "2s",
+		Timeout:  "1s",
 		Notes:    "Basic health checks",
+	}
+
+	switch protocol {
+	case "HTTP":
+		check.HTTP = "http://" + checkAddr + "/health"
+		check.Method = "GET"
+	case "GRPS":
+		check.GRPC = "http://" + checkAddr + "/health"
+		check.GRPCUseTLS = true
 	}
 
 	checkAddrList := strings.Split(checkAddr, ":")
 	port, _ := strconv.Atoi(checkAddrList[1])
-	num := rand.Intn(10000)
+	date := time.Now().Format("20060102150405")
 	asr := api.AgentServiceRegistration{
-		ID:      "stringsvc" + strconv.Itoa(num),
+		ID:      "stringsvc" + date,
 		Name:    "stringsvc",
 		Address: checkAddrList[0],
 		Port:    port,

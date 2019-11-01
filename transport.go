@@ -107,7 +107,7 @@ func (g grpcBinding) Count(ctx context.Context, req *pb.CountRequest) (*pb.Count
 	return &pb.CountReply{V: int64(v)}, nil
 }
 
-// func (g grpcBinding) HealthCheck(ctx context.Context, req *pb.CountRequest) (*pb.UppercaseRequest, error) {
-// 	v := g.svc.Count(req.S)
-// 	return &pb.CountReply{V: int64(v)}, nil
-// }
+func (g grpcBinding) HealthCheck(ctx context.Context, req *pb.CountRequest) (*pb.HealthReply, error) {
+	v := g.svc.HealthCheck()
+	return &pb.HealthReply{S: v}, nil
+}
