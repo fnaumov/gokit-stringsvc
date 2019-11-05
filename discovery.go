@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func ConsulRegister(consulAddr string, checkAddr string, protocol string) sd.Registrar {
+func ConsulRegister(consulAddr string, httpAddr string, grpcAddr string) sd.Registrar {
 	logger := log.NewLogfmtLogger(os.Stderr)
 
 	// Service discovery domain.
@@ -27,31 +27,32 @@ func ConsulRegister(consulAddr string, checkAddr string, protocol string) sd.Reg
 		client = consulsd.NewClient(consulClient)
 	}
 
-	check := api.AgentServiceCheck{
+	checkHTTP := api.AgentServiceCheck{
 		Interval: "10s",
 		Timeout:  "1s",
-		Notes:    "Basic health checks",
+		Notes:    "HTTP health checks",
+		HTTP:     "http://" + httpAddr + "/health",
+		Method:   "GET",
 	}
 
-	switch protocol {
-	case "HTTP":
-		check.HTTP = "http://" + checkAddr + "/health"
-		check.Method = "GET"
-	case "GRPS":
-		check.GRPC = "http://" + checkAddr + "/health"
-		check.GRPCUseTLS = true
+	checkGRPS := api.AgentServiceCheck{
+		Interval:   "10s",
+		Timeout:    "1s",
+		Notes:      "GRPS health checks",
+		GRPC:       grpcAddr,
+		GRPCUseTLS: false,
 	}
 
-	checkAddrList := strings.Split(checkAddr, ":")
-	port, _ := strconv.Atoi(checkAddrList[1])
+	httpAddrList := strings.Split(httpAddr, ":")
+	httpPort, _ := strconv.Atoi(httpAddrList[1])
+	grpcAddrList := strings.Split(grpcAddr, ":")
+	grpcPort, _ := strconv.Atoi(grpcAddrList[1])
 	date := time.Now().Format("20060102150405")
 	asr := api.AgentServiceRegistration{
 		ID:      "stringsvc" + date,
 		Name:    "stringsvc",
-		Address: checkAddrList[0],
-		Port:    port,
-		Tags:    []string{"stringsvc", strconv.Itoa(port)},
-		Check:   &check,
+		Tags:    []string{"stringsvc", strconv.Itoa(httpPort), strconv.Itoa(grpcPort)},
+		Checks:  []*api.AgentServiceCheck{&checkHTTP, &checkGRPS},
 	}
 
 	return consulsd.NewRegistrar(client, &asr, logger)

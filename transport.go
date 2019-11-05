@@ -97,17 +97,16 @@ type grpcBinding struct {
 	svc StringService
 }
 
-func (g grpcBinding) Uppercase(ctx context.Context, req *pb.UppercaseRequest) (*pb.UppercaseReply, error) {
+func (g grpcBinding) Uppercase(ctx context.Context, req *pb.UppercaseRequest) (*pb.UppercaseResponse, error) {
 	v, err := g.svc.Uppercase(req.S)
-	return &pb.UppercaseReply{V: v, Err: ""}, err
+	return &pb.UppercaseResponse{V: v, Err: ""}, err
 }
 
-func (g grpcBinding) Count(ctx context.Context, req *pb.CountRequest) (*pb.CountReply, error) {
+func (g grpcBinding) Count(ctx context.Context, req *pb.CountRequest) (*pb.CountResponse, error) {
 	v := g.svc.Count(req.S)
-	return &pb.CountReply{V: int64(v)}, nil
+	return &pb.CountResponse{V: int64(v)}, nil
 }
 
-func (g grpcBinding) HealthCheck(ctx context.Context, req *pb.CountRequest) (*pb.HealthReply, error) {
-	v := g.svc.HealthCheck()
-	return &pb.HealthReply{S: v}, nil
+func (g grpcBinding) HealthCheck(ctx context.Context, req *pb.CountRequest) (*pb.HealthCheckResponse, error) {
+	return &pb.HealthCheckResponse{Status: pb.HealthCheckResponse_SERVING}, nil
 }

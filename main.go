@@ -23,9 +23,9 @@ import (
 func main() {
 	var (
 		logger = log.NewLogfmtLogger(os.Stderr)
-		httpAddr = "localhost:8080"
-		grpcAddr = "localhost:8081"
-		consulAddr = "localhost:8500"
+		httpAddr = ":8080"
+		grpcAddr = ":8081"
+		consulAddr = ":8500"
 	)
 
 	rand.Seed(time.Now().UnixNano())
@@ -42,10 +42,10 @@ func main() {
 	}()
 
 	// HTTP Server
-	registrarHTTP := ConsulRegister(consulAddr, httpAddr, "HTTP")
+	registrar := ConsulRegister(consulAddr, httpAddr, grpcAddr)
+	registrar.Register()
 	go func() {
-		registrarHTTP.Register()
-		defer registrarHTTP.Deregister()
+		defer registrar.Deregister()
 
 		mux := http.NewServeMux()
 
@@ -76,10 +76,8 @@ func main() {
 	}()
 
 	// GRPC Server
-	registrarGRPC := ConsulRegister(consulAddr, grpcAddr, "GRPS")
 	go func() {
-		registrarGRPC.Register()
-		defer registrarGRPC.Deregister()
+		defer registrar.Deregister()
 
 		_ = logger.Log("protocol", "GRPC", "addr", grpcAddr)
 		ln, err := net.Listen("tcp", grpcAddr)
