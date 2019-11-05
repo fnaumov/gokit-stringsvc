@@ -3,15 +3,15 @@ syntax = "proto3";
 package pb;
 
 service StringService {
-	rpc Uppercase (UppercaseRequest) returns (UppercaseReply) {}
-	rpc Count (CountRequest) returns (CountReply) {}
+	rpc Uppercase (UppercaseRequest) returns (UppercaseResponse) {}
+	rpc Count (CountRequest) returns (CountResponse) {}
 }
 
 message UppercaseRequest {
 	string s = 1;
 }
 
-message UppercaseReply {
+message UppercaseResponse {
 	string v = 1;
 	string err = 2;
 }
@@ -20,7 +20,7 @@ message CountRequest {
 	string s = 1;
 }
 
-message CountReply {
+message CountResponse {
 	int64 v = 1;
 }
 
@@ -28,7 +28,7 @@ message HealthCheckRequest {
 	string service = 1;
 }
 
-message HealthCheckReply {
+message HealthCheckResponse {
 	enum ServingStatus {
 		UNKNOWN = 0;
 		SERVING = 1;
@@ -38,7 +38,7 @@ message HealthCheckReply {
 }
 
 service Health {
-	rpc Check(HealthCheckRequest) returns (HealthCheckReply);
+	rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
 
-	rpc Watch(HealthCheckRequest) returns (stream HealthCheckReply);
+	rpc Watch(HealthCheckRequest) returns (stream HealthCheckResponse);
 }
