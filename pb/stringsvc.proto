@@ -24,8 +24,21 @@ message CountReply {
 	int64 v = 1;
 }
 
-message HealthRequest {}
+message HealthCheckRequest {
+	string service = 1;
+}
 
-message HealthReply {
-	bool s = 1;
+message HealthCheckReply {
+	enum ServingStatus {
+		UNKNOWN = 0;
+		SERVING = 1;
+		NOT_SERVING = 2;
+	}
+	ServingStatus status = 1;
+}
+
+service Health {
+	rpc Check(HealthCheckRequest) returns (HealthCheckReply);
+
+	rpc Watch(HealthCheckRequest) returns (stream HealthCheckReply);
 }
