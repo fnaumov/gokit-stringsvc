@@ -1,6 +1,6 @@
 # StringSVC
 
-Simple application on **Go Kit**
+Simple microservice on **Go Kit**
 
 - Support HTTP and GRPC protocols
 - Support logging method calls
