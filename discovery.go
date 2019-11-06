@@ -6,54 +6,64 @@ import (
 	consulsd "github.com/go-kit/kit/sd/consul"
 	"github.com/hashicorp/consul/api"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 )
 
-func ConsulRegister(consulAddr string, httpAddr string, grpcAddr string) sd.Registrar {
+type DiscoveryProtocol int
+
+const (
+	DiscoveryProtocolHTTP DiscoveryProtocol = iota
+	DiscoveryProtocolGRPC
+)
+
+func ConsulRegister(client consulsd.Client, addr string, protocol DiscoveryProtocol) sd.Registrar {
 	logger := log.NewLogfmtLogger(os.Stderr)
+	var check api.AgentServiceCheck
+	var serviceName string
 
-	// Service discovery domain.
-	var client consulsd.Client
-	{
-		consulConfig := api.DefaultConfig()
-		consulConfig.Address = consulAddr
-		consulClient, err := api.NewClient(consulConfig)
-		if err != nil {
-			_ = logger.Log("err", err)
-			os.Exit(1)
+	switch protocol {
+	case DiscoveryProtocolHTTP:
+		check = api.AgentServiceCheck{
+			Interval: "10s",
+			Timeout:  "1s",
+			Notes:  "HTTP health checks",
+			HTTP:  "http://" + addr + "/health",
+			Method:  "GET",
 		}
-		client = consulsd.NewClient(consulClient)
+		serviceName = "stringsvcHTTP"
+	case DiscoveryProtocolGRPC:
+		check = api.AgentServiceCheck{
+			Interval: "10s",
+			Timeout:  "1s",
+			Notes:  "GRPC health checks",
+			GRPC:  addr,
+			GRPCUseTLS: false,
+		}
+		serviceName = "stringsvcGRPC"
 	}
 
-	checkHTTP := api.AgentServiceCheck{
-		Interval: "10s",
-		Timeout:  "1s",
-		Notes:    "HTTP health checks",
-		HTTP:     "http://" + httpAddr + "/health",
-		Method:   "GET",
-	}
-
-	checkGRPS := api.AgentServiceCheck{
-		Interval:   "10s",
-		Timeout:    "1s",
-		Notes:      "GRPS health checks",
-		GRPC:       grpcAddr,
-		GRPCUseTLS: false,
-	}
-
-	httpAddrList := strings.Split(httpAddr, ":")
-	httpPort, _ := strconv.Atoi(httpAddrList[1])
-	grpcAddrList := strings.Split(grpcAddr, ":")
-	grpcPort, _ := strconv.Atoi(grpcAddrList[1])
 	date := time.Now().Format("20060102150405")
 	asr := api.AgentServiceRegistration{
-		ID:      "stringsvc" + date,
-		Name:    "stringsvc",
-		Tags:    []string{"stringsvc", strconv.Itoa(httpPort), strconv.Itoa(grpcPort)},
-		Checks:  []*api.AgentServiceCheck{&checkHTTP, &checkGRPS},
+		ID:      serviceName + date,
+		Name:    serviceName,
+		Tags:    []string{"stringsvc", addr},
+		Check:   &check,
 	}
 
 	return consulsd.NewRegistrar(client, &asr, logger)
+}
+
+func ConsulClient(consulAddr string) consulsd.Client {
+	logger := log.NewLogfmtLogger(os.Stderr)
+
+	consulConfig := api.DefaultConfig()
+	consulConfig.Address = consulAddr
+	consulClient, err := api.NewClient(consulConfig)
+	if err != nil {
+		_ = logger.Log("err", err)
+		os.Exit(1)
+	}
+	client := consulsd.NewClient(consulClient)
+
+	return client
 }

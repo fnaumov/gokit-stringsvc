@@ -10,6 +10,8 @@ import (
 	httptransport "github.com/go-kit/kit/transport/http"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/health"
+	hv1 "google.golang.org/grpc/health/grpc_health_v1"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -41,11 +43,13 @@ func main() {
 		errc <- interrupt()
 	}()
 
+	consulClient := ConsulClient(consulAddr)
+
 	// HTTP Server
-	registrar := ConsulRegister(consulAddr, httpAddr, grpcAddr)
-	registrar.Register()
+	registrarHTTP := ConsulRegister(consulClient, httpAddr, DiscoveryProtocolHTTP)
 	go func() {
-		defer registrar.Deregister()
+		registrarHTTP.Register()
+		defer registrarHTTP.Deregister()
 
 		mux := http.NewServeMux()
 
@@ -76,8 +80,10 @@ func main() {
 	}()
 
 	// GRPC Server
+	registrarGRPC := ConsulRegister(consulClient, grpcAddr, DiscoveryProtocolGRPC)
 	go func() {
-		defer registrar.Deregister()
+		registrarGRPC.Register()
+		defer registrarGRPC.Deregister()
 
 		_ = logger.Log("protocol", "GRPC", "addr", grpcAddr)
 		ln, err := net.Listen("tcp", grpcAddr)
@@ -87,7 +93,9 @@ func main() {
 		}
 
 		s := grpc.NewServer()
-		pb.RegisterStringServiceServer(s, grpcBinding{svc})
+		healthServer := health.NewServer()
+		pb.RegisterStringServiceServer(s, grpcBinding{svc, healthServer})
+		hv1.RegisterHealthServer(s, grpcBinding{svc, healthServer})
 		errc <- s.Serve(ln)
 	}()
 
@@ -99,7 +107,7 @@ func main() {
 }
 
 func interrupt() error {
-	c := make(chan os.Signal)
+	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	return fmt.Errorf("%s", <-c)
 }

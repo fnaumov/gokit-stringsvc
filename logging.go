@@ -12,7 +12,7 @@ type loggingMiddleware struct {
 
 func (mw loggingMiddleware) Uppercase(s string) (output string, err error) {
 	defer func (begin time.Time) {
-		mw.logger.Log(
+		_ = mw.logger.Log(
 			"method", "uppercase",
 			"input", s,
 			"output", output,
@@ -27,7 +27,7 @@ func (mw loggingMiddleware) Uppercase(s string) (output string, err error) {
 
 func (mw loggingMiddleware) Count(s string) (n int) {
 	defer func (begin time.Time) {
-		mw.logger.Log(
+		_ = mw.logger.Log(
 			"method", "count",
 			"input", s,
 			"n", n,
@@ -41,8 +41,8 @@ func (mw loggingMiddleware) Count(s string) (n int) {
 
 func (mw loggingMiddleware) HealthCheck() (n bool) {
 	defer func (begin time.Time) {
-		mw.logger.Log(
-			"method", "health",
+		_ = mw.logger.Log(
+			"method", "healthCheck",
 			"n", n,
 			"took", time.Since(begin),
 		)

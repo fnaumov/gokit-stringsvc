@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"github.com/fnaumov/stringsvc/pb"
 	"github.com/go-kit/kit/endpoint"
+	"google.golang.org/grpc/health"
+	hv1 "google.golang.org/grpc/health/grpc_health_v1"
 	"net/http"
 )
 
@@ -53,12 +55,12 @@ func decodeCountRequest(_ context.Context, r *http.Request) (interface{}, error)
 	return request, nil
 }
 
-func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	return json.NewEncoder(w).Encode(response)
-}
-
 func decodeHealthRequest(_ context.Context, _ *http.Request) (interface{}, error) {
 	return HealthRequest{}, nil
+}
+
+func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+	return json.NewEncoder(w).Encode(response)
 }
 
 // Endpoints
@@ -95,6 +97,7 @@ func makeHealthEndpoint(svc StringService) endpoint.Endpoint {
 
 type grpcBinding struct {
 	svc StringService
+	healthServer *health.Server
 }
 
 func (g grpcBinding) Uppercase(ctx context.Context, req *pb.UppercaseRequest) (*pb.UppercaseResponse, error) {
@@ -107,6 +110,12 @@ func (g grpcBinding) Count(ctx context.Context, req *pb.CountRequest) (*pb.Count
 	return &pb.CountResponse{V: int64(v)}, nil
 }
 
-func (g grpcBinding) HealthCheck(ctx context.Context, req *pb.CountRequest) (*pb.HealthCheckResponse, error) {
-	return &pb.HealthCheckResponse{Status: pb.HealthCheckResponse_SERVING}, nil
+func (g grpcBinding) Check(ctx context.Context, req *hv1.HealthCheckRequest) (*hv1.HealthCheckResponse, error) {
+	res, err :=  g.healthServer.Check(ctx, req)
+	return res, err
+}
+
+func (g grpcBinding) Watch(req *hv1.HealthCheckRequest, hws hv1.Health_WatchServer) error {
+	err :=  g.healthServer.Watch(req, hws)
+	return err
 }
