@@ -26,7 +26,7 @@ func main() {
 	var (
 		logger = log.NewLogfmtLogger(os.Stderr)
 		httpAddr = ":8080"
-		grpcAddr = ":8081"
+		grpcAddr = "localhost:8081"
 		consulAddr = "127.0.0.1:8500"
 	)
 

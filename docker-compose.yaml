@@ -1,22 +1,23 @@
 version: '3.7'
 
-networks:
-  lan:
+#networks:
+#  lan:
 
 services:
   consul:
     container_name: stringsvc-consul
     image: consul:1.6.1
-    networks:
-      - lan
+#    networks:
+#      - lan
     ports:
       - 8500:8500
+#    command: agent -server -ui  -bootstrap-expect=1 -client 0.0.0.0
 
   stringsvc:
     container_name: stringsvc
     build: docker/stringsvc
-    networks:
-      - lan
+#    networks:
+#      - lan
     depends_on:
       - consul
     ports:
