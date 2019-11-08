@@ -1,0 +1,23 @@
+version: '3.7'
+
+networks:
+  lan:
+
+services:
+  consul:
+    container_name: stringsvc-consul
+    image: consul:1.6.1
+    networks:
+      - lan
+    ports:
+      - 8500:8500
+
+  stringsvc:
+    container_name: stringsvc
+    build: docker/stringsvc
+    networks:
+      - lan
+    depends_on:
+      - consul
+    ports:
+      - 8080:8080

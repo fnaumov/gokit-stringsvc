@@ -25,9 +25,9 @@ import (
 func main() {
 	var (
 		logger = log.NewLogfmtLogger(os.Stderr)
-		httpAddr = ":8080"
-		grpcAddr = ":8081"
-		consulAddr = ":8500"
+		httpAddr = "127.0.0.1:8080"
+		grpcAddr = "127.0.0.1:8081"
+		consulAddr = "127.0.0.1:8500"
 	)
 
 	rand.Seed(time.Now().UnixNano())
