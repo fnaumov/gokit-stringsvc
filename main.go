@@ -25,8 +25,8 @@ import (
 func main() {
 	var (
 		logger = log.NewLogfmtLogger(os.Stderr)
-		httpAddr = "172.31.0.2:8080"
-		grpcAddr = "172.31.0.2:8081"
+		httpAddr = "127.0.0.1:8080"
+		grpcAddr = "127.0.0.1:8081"
 		consulAddr = "127.0.0.1:8500"
 	)
 

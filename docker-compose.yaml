@@ -11,9 +11,9 @@ services:
       - lan
     ports:
       - 8500:8500
-      - 8301:8301
-      - 8302:8302
-      - 8600:8600
+#      - 8301:8301
+#      - 8302:8302
+#      - 8600:8600
 #    command: agent -server -ui  -bootstrap-expect=1 -bind 127.0.0.1 -client 0.0.0.0
 
   stringsvc:
@@ -21,10 +21,10 @@ services:
     build: docker/stringsvc
     networks:
       - lan
-    links:
-      - consul:consul
+#    links:
+#      - consul:consul
     depends_on:
       - consul
     ports:
       - 8080:8080
-      - 8081:8081
+#      - 8081:8081
