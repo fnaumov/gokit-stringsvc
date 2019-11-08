@@ -15,6 +15,7 @@ services:
 #      - 8302:8302
 #      - 8600:8600
 #    command: agent -server -ui  -bootstrap-expect=1 -bind 127.0.0.1 -client 0.0.0.0
+    command: agent -server -ui  -bootstrap-expect=1 -client 0.0.0.0
 
   stringsvc:
     container_name: stringsvc
