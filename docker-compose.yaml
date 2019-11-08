@@ -18,6 +18,8 @@ services:
     build: docker/stringsvc
 #    networks:
 #      - lan
+    links:
+      - consul:consul
     depends_on:
       - consul
     ports:
