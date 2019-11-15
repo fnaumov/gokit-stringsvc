@@ -4,13 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/fnaumov/stringsvc/pb"
 	gokitjwt "github.com/go-kit/kit/auth/jwt"
-	"github.com/go-kit/kit/endpoint"
 	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
-	"google.golang.org/grpc/health"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"net/http"
 )
 
@@ -93,46 +89,7 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	})
 }
 
-// Endpoints
-
-func makeUppercaseEndpoint(svc StringService) endpoint.Endpoint {
-	return func(_ context.Context, request interface{}) (interface{}, error) {
-		req := request.(uppercaseRequest)
-		v, err := svc.Uppercase(req.S)
-		if err != nil {
-			return uppercaseResponse{v, err.Error()}, nil
-		}
-
-		return uppercaseResponse{v, ""}, nil
-	}
-}
-
-func makeCountEndpoint(svc StringService) endpoint.Endpoint {
-	return func(_ context.Context, request interface{}) (interface{}, error) {
-		req := request.(countRequest)
-		v := svc.Count(req.S)
-
-		return countResponse{v}, nil
-	}
-}
-
-func makeHealthEndpoint(svc StringService) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		status := svc.HealthCheck()
-		return healthResponse{S: status}, nil
-	}
-}
-
-func makeAuthEndpoint(svc StringService) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(authRequest)
-		token, err := svc.Auth(req.Username, req.Password)
-		if err != nil {
-			return nil, err
-		}
-		return authResponse{token, ""}, nil
-	}
-}
+// Http Handler
 
 func makeHttpHandler(svc StringService) http.Handler {
 	kf := func(token *jwt.Token) (interface{}, error) {
@@ -177,36 +134,4 @@ func makeHttpHandler(svc StringService) http.Handler {
 	))
 
 	return r
-}
-
-// GRPC Binding
-
-type grpcBinding struct {
-	svc StringService
-	healthServer *health.Server
-}
-
-func (g grpcBinding) Uppercase(ctx context.Context, req *pb.UppercaseRequest) (*pb.UppercaseResponse, error) {
-	v, err := g.svc.Uppercase(req.S)
-	return &pb.UppercaseResponse{V: v, Err: ""}, err
-}
-
-func (g grpcBinding) Count(ctx context.Context, req *pb.CountRequest) (*pb.CountResponse, error) {
-	v := g.svc.Count(req.S)
-	return &pb.CountResponse{V: int64(v)}, nil
-}
-
-func (g grpcBinding) Check(ctx context.Context, req *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
-	res, err :=  g.healthServer.Check(ctx, req)
-	return res, err
-}
-
-func (g grpcBinding) Watch(req *healthpb.HealthCheckRequest, hws healthpb.Health_WatchServer) error {
-	err :=  g.healthServer.Watch(req, hws)
-	return err
-}
-
-func (g grpcBinding) Auth(ctx context.Context, req *pb.AuthRequest) (*pb.AuthResponse, error) {
-	token, err := g.svc.Auth(req.Username, req.Password)
-	return &pb.AuthResponse{Token: token, Err: ""}, err
 }
