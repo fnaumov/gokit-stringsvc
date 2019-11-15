@@ -205,3 +205,8 @@ func (g grpcBinding) Watch(req *healthpb.HealthCheckRequest, hws healthpb.Health
 	err :=  g.healthServer.Watch(req, hws)
 	return err
 }
+
+func (g grpcBinding) Auth(ctx context.Context, req *pb.AuthRequest) (*pb.AuthResponse, error) {
+	token, err := g.svc.Auth(req.Username, req.Password)
+	return &pb.AuthResponse{Token: token, Err: ""}, err
+}

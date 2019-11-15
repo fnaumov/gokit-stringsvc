@@ -8,6 +8,7 @@ import (
 	"github.com/fnaumov/stringsvc/pb"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"net/http"
 	"testing"
 )
@@ -72,7 +73,35 @@ func httpUppercase(t *testing.T, jwtToken string) {
 
 func TestGRPCServer(t *testing.T) {
 	runGRPCServer(consulClient, makeSvc(), grpcAddr)
+	jwtToken := grpcJwtAuth(t)
+	grpcUppercase(t, jwtToken)
+}
 
+func grpcJwtAuth(t *testing.T) string {
+	conn, err := grpc.Dial("localhost:8081", grpc.WithInsecure())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer conn.Close()
+
+	client := pb.NewStringServiceClient(conn)
+	request := &pb.AuthRequest{
+		Username: "user1",
+		Password: "passwordOne",
+	}
+
+	response, err := client.Auth(context.Background(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(fmt.Sprintf("response: %s", response.Token))
+
+	return response.Token
+}
+
+func grpcUppercase(t *testing.T, jwtToken string) {
 	conn, err := grpc.Dial("localhost:8081", grpc.WithInsecure())
 	if err != nil {
 		t.Fatal(err)
@@ -85,7 +114,9 @@ func TestGRPCServer(t *testing.T) {
 		S: "Hello, this response for GRPC request!",
 	}
 
-	response, err := client.Uppercase(context.Background(), request)
+	md := metadata.Pairs("authorization", jwtToken)
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
+	response, err := client.Uppercase(ctx, request)
 	if err != nil {
 		t.Fatal(err)
 	}
