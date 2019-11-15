@@ -3,10 +3,14 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/fnaumov/stringsvc/pb"
+	gokitjwt "github.com/go-kit/kit/auth/jwt"
 	"github.com/go-kit/kit/endpoint"
+	httptransport "github.com/go-kit/kit/transport/http"
+	"github.com/gorilla/mux"
 	"google.golang.org/grpc/health"
-	hv1 "google.golang.org/grpc/health/grpc_health_v1"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"net/http"
 )
 
@@ -29,10 +33,20 @@ type countResponse struct {
 	V int `json:"v"`
 }
 
-type HealthRequest struct {}
+type healthRequest struct {}
 
-type HealthResponse struct {
+type healthResponse struct {
 	S bool `json:"status"`
+}
+
+type authRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type authResponse struct {
+	Token string `json:"token,omitempty"`
+	Err   string `json:"err,omitempty"`
 }
 
 // Decoders and Encoders
@@ -56,11 +70,27 @@ func decodeCountRequest(_ context.Context, r *http.Request) (interface{}, error)
 }
 
 func decodeHealthRequest(_ context.Context, _ *http.Request) (interface{}, error) {
-	return HealthRequest{}, nil
+	return healthRequest{}, nil
+}
+
+func decodeAuthRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	var request authRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		return nil, err
+	}
+	return request, nil
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	return json.NewEncoder(w).Encode(response)
+}
+
+func encodeError(_ context.Context, err error, w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"error": err.Error(),
+	})
 }
 
 // Endpoints
@@ -89,8 +119,64 @@ func makeCountEndpoint(svc StringService) endpoint.Endpoint {
 func makeHealthEndpoint(svc StringService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		status := svc.HealthCheck()
-		return HealthResponse{S: status}, nil
+		return healthResponse{S: status}, nil
 	}
+}
+
+func makeAuthEndpoint(svc StringService) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(authRequest)
+		token, err := svc.Auth(req.Username, req.Password)
+		if err != nil {
+			return nil, err
+		}
+		return authResponse{token, ""}, nil
+	}
+}
+
+func makeHttpHandler(svc StringService) http.Handler {
+	kf := func(token *jwt.Token) (interface{}, error) {
+		return authConfig.key, nil
+	}
+	clf := func() jwt.Claims {
+		return &customClaims{}
+	}
+	options := []httptransport.ServerOption{
+		httptransport.ServerErrorEncoder(encodeError),
+		httptransport.ServerBefore(gokitjwt.HTTPToContext()),
+	}
+
+	r := mux.NewRouter()
+
+	r.Methods("POST").Path("/uppercase").Handler(httptransport.NewServer(
+		gokitjwt.NewParser(kf, jwt.SigningMethodHS256, clf)(makeUppercaseEndpoint(svc)),
+		decodeUppercaseRequest,
+		encodeResponse,
+		options...,
+	))
+
+	r.Methods("POST").Path("/count").Handler(httptransport.NewServer(
+		gokitjwt.NewParser(kf, jwt.SigningMethodHS256, clf)(makeCountEndpoint(svc)),
+		decodeCountRequest,
+		encodeResponse,
+		options...,
+	))
+
+	r.Methods("GET").Path("/health").Handler(httptransport.NewServer(
+		makeHealthEndpoint(svc),
+		decodeHealthRequest,
+		encodeResponse,
+		options...,
+	))
+
+	r.Methods("POST").Path("/auth").Handler(httptransport.NewServer(
+		makeAuthEndpoint(svc),
+		decodeAuthRequest,
+		encodeResponse,
+		options...,
+	))
+
+	return r
 }
 
 // GRPC Binding
@@ -110,12 +196,12 @@ func (g grpcBinding) Count(ctx context.Context, req *pb.CountRequest) (*pb.Count
 	return &pb.CountResponse{V: int64(v)}, nil
 }
 
-func (g grpcBinding) Check(ctx context.Context, req *hv1.HealthCheckRequest) (*hv1.HealthCheckResponse, error) {
+func (g grpcBinding) Check(ctx context.Context, req *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
 	res, err :=  g.healthServer.Check(ctx, req)
 	return res, err
 }
 
-func (g grpcBinding) Watch(req *hv1.HealthCheckRequest, hws hv1.Health_WatchServer) error {
+func (g grpcBinding) Watch(req *healthpb.HealthCheckRequest, hws healthpb.Health_WatchServer) error {
 	err :=  g.healthServer.Watch(req, hws)
 	return err
 }

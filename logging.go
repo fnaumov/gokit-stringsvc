@@ -6,6 +6,7 @@ import (
 )
 
 type loggingMiddleware struct {
+	auth AuthService
 	logger log.Logger
 	next StringService
 }
@@ -49,5 +50,20 @@ func (mw loggingMiddleware) HealthCheck() (n bool) {
 	}(time.Now())
 
 	n = mw.next.HealthCheck()
+	return
+}
+
+func (mw loggingMiddleware) Auth(clientID string, clientSecret string) (token string, err error) {
+	defer func(begin time.Time) {
+		_ = mw.logger.Log(
+			"method", "auth",
+			"username", clientID,
+			"token", token,
+			"err", err,
+			"took", time.Since(begin),
+		)
+	}(time.Now())
+
+	token, err = mw.auth.Auth(clientID, clientSecret)
 	return
 }

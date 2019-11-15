@@ -23,3 +23,13 @@ message CountRequest {
 message CountResponse {
 	int64 v = 1;
 }
+
+message AuthRequest {
+	string Username = 1;
+	string Password = 2;
+}
+
+message AuthResponse {
+	string token = 1;
+	string err = 2;
+}
