@@ -7,7 +7,7 @@ import (
 
 type StringService interface {
 	Uppercase(string) (string, error)
-	Count(string) int
+	Count(string) int64
 	HealthCheck() bool
 	Auth(string, string) (string, error)
 }
@@ -26,8 +26,8 @@ func (ss stringService) Uppercase(s string) (token string, err error) {
 	return strings.ToUpper(s), nil
 }
 
-func (ss stringService) Count(s string) int {
-	return len(s)
+func (ss stringService) Count(s string) int64 {
+	return int64(len(s))
 }
 
 func (ss stringService) HealthCheck() bool {

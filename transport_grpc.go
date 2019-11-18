@@ -29,7 +29,7 @@ func decodeCountGRPCRequest(ctx context.Context, req interface{}) (interface{}, 
 
 func encodeCountGRPCResponse(ctx context.Context, resp interface{}) (interface{}, error) {
 	r := resp.(countResponse)
-	return &pb.CountResponse{V: int64(r.V)}, nil
+	return &pb.CountResponse{V: r.V}, nil
 }
 
 func decodeAuthGRPCRequest(ctx context.Context, req interface{}) (interface{}, error) {

@@ -26,7 +26,7 @@ func (mw loggingMiddleware) Uppercase(s string) (output string, err error) {
 	return
 }
 
-func (mw loggingMiddleware) Count(s string) (n int) {
+func (mw loggingMiddleware) Count(s string) (n int64) {
 	defer func (begin time.Time) {
 		_ = mw.logger.Log(
 			"method", "count",
