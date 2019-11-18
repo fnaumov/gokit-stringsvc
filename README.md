@@ -15,3 +15,14 @@ Simple microservice on **Go Kit**
 
 ## Deployment to Kubernetes
 - Command `kubectl create -f ks-manifest.yaml`
+
+## Usage microservice
+- Run
+- Authorization request and receiving JWT token
+```shell script
+curl -v -XPOST -d '{"username": "user1", "password": "passwordOne"}' http://localhost:8080/auth
+```
+- Request (need specify token returned from auth request)
+```shell script
+curl -v -XPOST -d '{"s": "Hello world!"}' -H "Authorization: Bearer eyJhbGciOi..." http://localhost:8080/uppercase
+```
