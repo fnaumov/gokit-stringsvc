@@ -6,6 +6,7 @@ Simple microservice on **Go Kit**
 - Support logging method calls
 - Implemented registration of services in **Consul** and health check method
 - Implemented authorization with JWT Token
+- Possibility deploy to **Kubernetes**
 
 ## Consul
 - Install on macOS: `brew install consul`
