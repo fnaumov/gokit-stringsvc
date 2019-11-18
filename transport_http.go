@@ -89,9 +89,9 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 	})
 }
 
-// Http Handler
+// HTTP Handler
 
-func makeHttpHandler(svc StringService) http.Handler {
+func makeHTTPHandler(svc StringService) http.Handler {
 	kf := func(token *jwt.Token) (interface{}, error) {
 		return authConfig.key, nil
 	}

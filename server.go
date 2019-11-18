@@ -55,7 +55,7 @@ func main() {
 }
 
 func runHTTPServer(consulClient consulsd.Client, svc StringService, addr string) {
-	handler := makeHttpHandler(svc)
+	handler := makeHTTPHandler(svc)
 
 	registrarHTTP := ConsulRegister(consulClient, addr, DiscoveryProtocolHTTP)
 	go func() {
@@ -76,8 +76,10 @@ func runGRPCServer(consulClient consulsd.Client, svc StringService, addr string)
 
 	srv := grpc.NewServer()
 	healthServer := health.NewServer()
-	pb.RegisterStringServiceServer(srv, grpcBinding{svc, healthServer})
-	healthpb.RegisterHealthServer(srv, grpcBinding{svc, healthServer})
+	grpcBind := grpcBinding{svc:svc, healthServer:healthServer}
+	grpcBinding := makeGRPCBinding(svc, grpcBind)
+	pb.RegisterStringServiceServer(srv, grpcBinding)
+	healthpb.RegisterHealthServer(srv, grpcBinding)
 
 	registrarGRPC := ConsulRegister(consulClient, addr, DiscoveryProtocolGRPC)
 	go func() {

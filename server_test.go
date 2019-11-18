@@ -114,7 +114,7 @@ func grpcUppercase(t *testing.T, jwtToken string) {
 		S: "Hello, this response for GRPC request!",
 	}
 
-	md := metadata.Pairs("authorization", jwtToken)
+	md := metadata.Pairs("authorization", fmt.Sprintf("Bearer %s", jwtToken))
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 	response, err := client.Uppercase(ctx, request)
 	if err != nil {
