@@ -14,7 +14,8 @@ Simple microservice on **Go Kit**
 - Dashboard panel: `http://localhost:8500/ui/dc1/services`
 
 ## Deployment to Kubernetes
-- Command `kubectl create -f ks-manifest.yaml`
+- Docker build and tagging (run in project directory) `docker build -t fnaumov/stringsvc .`
+- Deployment command `kubectl create -f ks-manifest.yaml`
 
 ## Usage microservice
 - Run
