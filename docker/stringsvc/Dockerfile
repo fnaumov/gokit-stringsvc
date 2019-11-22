@@ -1,7 +1,7 @@
 FROM golang:1.13-alpine as builder
 RUN apk add --no-cache ca-certificates git
 
-ENV PROJECT github.com/fnaumov/stringsvc
+ENV PROJECT github.com/fnaumov/gokit-stringsvc
 WORKDIR /go/src
 
 RUN go get $PROJECT

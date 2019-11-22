@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/fnaumov/stringsvc/pb"
+	"github.com/fnaumov/gokit-stringsvc/pb"
 	gokitjwt "github.com/go-kit/kit/auth/jwt"
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 	"google.golang.org/grpc/health"

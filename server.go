@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/fnaumov/stringsvc/pb"
+	"github.com/fnaumov/gokit-stringsvc/pb"
 	"github.com/go-kit/kit/log"
 	consulsd "github.com/go-kit/kit/sd/consul"
 	"google.golang.org/grpc"
